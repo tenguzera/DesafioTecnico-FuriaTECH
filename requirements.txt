@@ -6,3 +6,7 @@ transformers
 torch
 python-Levenshtein
 tweepy
+requests
+Flask
+beautifulsoup4
+sentence-transformers

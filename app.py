@@ -1,12 +1,10 @@
 import streamlit as st
 import pytesseract
-from PIL import Image
-import requests
-from transformers import pipeline
 import datetime
 import re
-import Levenshtein
-import unicodedata
+from funcoes import *
+from transformers import pipeline
+from PIL import Image
 
 # ------------------- Configuração da página -------------------
 st.set_page_config(page_title="Know Your Fan | FURIA",
@@ -15,13 +13,6 @@ st.set_page_config(page_title="Know Your Fan | FURIA",
 # Inicializa o estado da etapa atual
 if "step" not in st.session_state:
     st.session_state.step = 1
-
-# Funções de navegação
-def next_step():
-    st.session_state.step += 1
-
-def prev_step():
-    st.session_state.step -= 1
 
 st.markdown(
     f"""
@@ -132,131 +123,146 @@ elif st.session_state.step == 3:
     with col1:
         st.button("⬅️ Voltar", on_click=prev_step)
     with col2:
-        submit = st.button("Finalizar ✅")
-
-    if submit:
-         # Verifica se todos os campos obrigatórios estão preenchidos
-           campos_obrigatorios = [
-               st.session_state.get("name"),
-               st.session_state.get("birth_date"),
-               st.session_state.get("genero"),
-               st.session_state.get("cpf"),
-               st.session_state.get("email"),
-               st.session_state.get("estado"),
-               st.session_state.get("cidade"),
-               st.session_state.get("endereco"),
-               st.session_state.get("fav_org"),
-               st.session_state.get("jogos"),
-               st.session_state.get("plataformas"),
-               st.session_state.get("eventos"),
-               st.session_state.get("compras")
-           ]
-
-           if all(campos_obrigatorios):
-               dados = {
-                   "nome": st.session_state.name,
-                   "data_nascimento": str(st.session_state.birth_date),
-                   "genero": st.session_state.genero,
-                   "cpf": st.session_state.cpf,
-                   "email": st.session_state.email,
-                   "estado": st.session_state.estado,
-                   "cidade": st.session_state.cidade,
-                   "endereco": st.session_state.endereco,
-                   "organizacao_favorita": st.session_state.fav_org,
-                   "jogos": st.session_state.jogos,
-                   "plataformas": st.session_state.plataformas,
-                   "eventos": st.session_state.eventos,
-                   "compras": st.session_state.compras
-               }
-
-               try:
-                   response = requests.post("http://localhost:5000/salvar", json=dados)
-                   if response.status_code == 200:
-                       st.success("✅ Dados enviados com sucesso ao servidor!")
-                   else:
-                       st.error(f"❌ Erro ao enviar os dados: {response.text}")
-               except Exception as e:
-                   st.error(f"❌ Erro ao conectar com a API: {e}")
-           else:
-               st.error("⚠️ Por favor, preencha todos os campos antes de finalizar o formulário.")
-
-st.divider()
+        st.button("Próximo ➡️", on_click=next_step)
 
 # ========================
-# ETAPA 4 - Upload de Documento
+# ETAPA 4 - Integração com redes sociais
 # ========================
-st.subheader("📄 Validação de Documento")
-uploaded_file = st.file_uploader("Envie seu documento (imagem)", type=["png", "jpg", "jpeg"])
+elif st.session_state.step == 4:
+    st.header("Etapa 4: Integração com redes sociais")
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
+    col1, col_spacer, col2 = st.columns([1, 5, 1])
+    with col1:
+        st.button("⬅️ Voltar", on_click=prev_step)
+    with col2:
+        st.button("Próximo ➡️", on_click=next_step)
 
-    # OCR para extrair texto
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-    text_extracted = pytesseract.image_to_string(image)
+# ========================
+# ETAPA 5 - Upload de Documento
+# ========================
+elif st.session_state.step == 5:
+    st.header("Etapa 5: Validação de Documento")
 
-    def normalize(text):
-        text = unicodedata.normalize('NFKD', text)
-        text = ''.join([c for c in text if not unicodedata.combining(c)])
-        return text.lower().strip()
+    uploaded_file = st.file_uploader("Envie seu documento (imagem)", type=["png", "jpg", "jpeg"])
 
-    # Texto limpo
-    texto_ocr_normalizado = normalize(text_extracted).replace('\n', ' ')
+    col1, col_spacer, col2 = st.columns([1, 5, 1])
+    with col1:
+        st.button("⬅️ Voltar", on_click=prev_step)
+    with col2:
+        st.empty()
 
-    # Nome do usuário limpo e dividido em palavras
-    nome_usuario = normalize(st.session_state.name)
-    palavras_nome = nome_usuario.split()
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
 
-    # ------------------- CPF -------------------
-    # Normaliza o texto extraído pelo OCR
-    texto_limpo = text_extracted.replace('\n', ' ').replace(' ', '').replace('-', '').replace('.', '').replace('/',                                                                                                     '')
-    # Extrai todas as sequências de 11 dígitos (possíveis CPFs)
-    possiveis_cpfs = re.findall(r'\d{11}', texto_limpo)
-    # Verifica se o CPF está entre os extraídos
-    cpf_valido = st.session_state.cpf in possiveis_cpfs
+        # OCR para extrair texto
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        text_extracted = pytesseract.image_to_string(image)
 
-    # ------------------- Nome -------------------
-    # nome_valido = st.session_state.name.lower() in text_extracted.lower()
-    def nome_validado(palavras_nome, texto):
-        for palavra in palavras_nome:
-            correspondencias = [
-                Levenshtein.ratio(palavra, palavra_ocr)
-                for palavra_ocr in texto.split()
-            ]
-            if max(correspondencias, default=0) < 0.85:
-                return False
-        return True
+        # Texto limpo
+        texto_ocr_normalizado = normalize(text_extracted).replace('\n', ' ')
 
-    nome_valido = nome_validado(palavras_nome, texto_ocr_normalizado)
+        # Nome do usuário limpo e dividido em palavras
+        nome_usuario = normalize(st.session_state.name)
+        palavras_nome = nome_usuario.split()
 
-    if nome_valido and cpf_valido:
-        st.success("✅ Documento validado com sucesso!")
+        # ------------------- CPF -------------------
+        # Normaliza o texto extraído pelo OCR
+        texto_limpo = text_extracted.replace('\n', ' ').replace(' ', '').replace('-', '').replace('.', '').replace('/', '')
+        # Extrai todas as sequências de 11 dígitos (possíveis CPFs)
+        possiveis_cpfs = re.findall(r'\d{11}', texto_limpo)
+        # Verifica se o CPF está entre os extraídos
+        cpf_valido = st.session_state.cpf in possiveis_cpfs
+
+        # ------------------- Nome -------------------
+        nome_valido = nome_validado(palavras_nome, texto_ocr_normalizado)
+
+        if nome_valido and cpf_valido:
+            st.success("✅ Documento validado com sucesso!")
+            with col2:
+               submit = st.button("Finalizar ✅", on_click=next_step)
+            if submit:
+                # Verifica se todos os campos obrigatórios estão preenchidos
+                campos_obrigatorios = [
+                    st.session_state.get("name"),
+                    st.session_state.get("birth_date"),
+                    st.session_state.get("genero"),
+                    st.session_state.get("cpf"),
+                    st.session_state.get("email"),
+                    st.session_state.get("estado"),
+                    st.session_state.get("cidade"),
+                    st.session_state.get("endereco"),
+                    st.session_state.get("fav_org"),
+                    st.session_state.get("jogos"),
+                    st.session_state.get("plataformas"),
+                    st.session_state.get("eventos"),
+                    st.session_state.get("compras")
+                ]
+
+                if all(campos_obrigatorios):
+                    dados = {
+                        "nome": st.session_state.name,
+                        "data_nascimento": str(st.session_state.birth_date),
+                        "genero": st.session_state.genero,
+                        "cpf": st.session_state.cpf,
+                        "email": st.session_state.email,
+                        "estado": st.session_state.estado,
+                        "cidade": st.session_state.cidade,
+                        "endereco": st.session_state.endereco,
+                        "organizacao_favorita": st.session_state.fav_org,
+                        "jogos": st.session_state.jogos,
+                        "plataformas": st.session_state.plataformas,
+                        "eventos": st.session_state.eventos,
+                        "compras": st.session_state.compras
+                    }
+
+                    try:
+                        response = requests.post("http://localhost:5000/salvar", json=dados)
+                        if response.status_code == 200:
+                            st.success("✅ Dados enviados com sucesso ao servidor!")
+                        else:
+                            st.error(f"❌ Erro ao enviar os dados: {response.text}")
+                    except Exception as e:
+                        st.error(f"❌ Erro ao conectar com a API: {e}")
+                else:
+                    st.error("⚠️ Por favor, preencha todos os campos antes de finalizar o formulário.")
+        else:
+            if not nome_valido:
+                st.error("❌ Nome não encontrado no documento.")
+            if not cpf_valido:
+                st.error("❌ CPF não encontrado ou inválido no documento.")
+
+# ========================
+# ETAPA 6 - Recomendação de Perfis
+# ========================
+elif st.session_state.step == 6:
+    st.header("Obrigado por responder!")
+    st.subheader("Aqui estão alguns perfis que você pode se interessar:")
+
+    resumo_usuario = (
+        f"Nome: {st.session_state['name']}. "
+        f"Joga: {', '.join(st.session_state['jogos'])}. "
+        f"Usa as plataformas: {', '.join(st.session_state['plataformas'])}. "
+        f"Organização favorita: {st.session_state['fav_org']}."
+    )
+
+    links_catalogo = [
+        "https://liquipedia.net/counterstrike/FURIA",
+        "https://liquipedia.net/leagueoflegends/LTA/2025/Split_2/South",
+        "https://liquipedia.net/valorant/VCT/2025/Americas_League/Stage_1",
+        "https://liquipedia.net/leagueoflegends/FURIA_Esports",
+        "https://fortnitetracker.com/events",
+        "https://escharts.com/pt/tournaments/free-fire"
+    ]
+
+    for link in links_catalogo:
+        texto = extrair_texto_url(link)
+        if texto:
+            similaridade = verificar_relevancia(texto, resumo_usuario)
+            if similaridade > 0.4:
+                st.success(f"🔗 Recomendado: {link} (similaridade: {similaridade:.2f})")
+            else:
+                st.info(f"🔗 Possível interesse: {link} (similaridade: {similaridade:.2f})")
+        else:
+            st.error(f"❌ Não foi possível acessar: {link}")
     else:
-        if not nome_valido:
-            st.error("❌ Nome não encontrado no documento.")
-        if not cpf_valido:
-            st.error("❌ CPF não encontrado ou inválido no documento.")
-
-st.divider()
-
-# Análise de Perfil de eSports
-st.subheader("🔗 Análise de Links de Perfil de eSports")
-url = st.text_input("Cole o link de perfil ou conteúdo sobre eSports")
-
-if st.button("Analisar Link"):
-    # Simulação: baixando o conteúdo do link (ideal seria scraping real)
-    st.info("Simulando análise do conteúdo...")
-    sample_text = "FURIA vence campeonato de CS:GO e encanta fãs."
-
-    # Classificador usando modelo HuggingFace
-    classifier = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english")
-
-    result = classifier(sample_text)[0]
-    label = result['label']
-    score = result['score']
-
-    if label == "POSITIVE" and score > 0.7:
-        st.success(f"✅ Conteúdo relevante para eSports! (Confiança: {score:.2f})")
-    else:
-        st.warning(f"⚠️ Conteúdo não diretamente relacionado. (Confiança: {score:.2f})")
-
+        st.info("Preencha o formulário para receber recomendações de perfis.")
