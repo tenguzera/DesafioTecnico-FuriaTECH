@@ -32,8 +32,12 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("Know Your Fan")
-st.subheader("Nos ajude a te conhecer melhor!")
+if st.session_state.get("step") == 1:
+    st.title("Know Your Fan")
+    st.subheader("Nos ajude a te conhecer melhor!")
+elif st.session_state.get("step") == 6:
+    st.title("Obrigado por responder!")
+    st.subheader("Aqui estão alguns perfis que você pode se interessar:")
 
 # ========================
 # ETAPA 1 - Informações pessoais
@@ -177,54 +181,54 @@ elif st.session_state.step == 5:
         nome_valido = nome_validado(palavras_nome, texto_ocr_normalizado)
 
         if nome_valido and cpf_valido:
-            st.success("✅ Documento validado com sucesso!")
+            st.success("✅ Documento validado com sucesso! Clique para finalizar.")
             with col2:
-               submit = st.button("Finalizar ✅", on_click=next_step)
-            if submit:
-                # Verifica se todos os campos obrigatórios estão preenchidos
-                campos_obrigatorios = [
-                    st.session_state.get("name"),
-                    st.session_state.get("birth_date"),
-                    st.session_state.get("genero"),
-                    st.session_state.get("cpf"),
-                    st.session_state.get("email"),
-                    st.session_state.get("estado"),
-                    st.session_state.get("cidade"),
-                    st.session_state.get("endereco"),
-                    st.session_state.get("fav_org"),
-                    st.session_state.get("jogos"),
-                    st.session_state.get("plataformas"),
-                    st.session_state.get("eventos"),
-                    st.session_state.get("compras")
-                ]
+                submit = st.button("Finalizar ✅")
+                if submit:
+                    # Verifica se todos os campos obrigatórios estão preenchidos
+                    campos_obrigatorios = [
+                        st.session_state.get("name"),
+                        st.session_state.get("birth_date"),
+                        st.session_state.get("genero"),
+                        st.session_state.get("cpf"),
+                        st.session_state.get("email"),
+                        st.session_state.get("estado"),
+                        st.session_state.get("cidade"),
+                        st.session_state.get("endereco"),
+                        st.session_state.get("fav_org"),
+                        st.session_state.get("jogos"),
+                        st.session_state.get("plataformas"),
+                        st.session_state.get("eventos"),
+                        st.session_state.get("compras")
+                    ]
 
-                if all(campos_obrigatorios):
-                    dados = {
-                        "nome": st.session_state.name,
-                        "data_nascimento": str(st.session_state.birth_date),
-                        "genero": st.session_state.genero,
-                        "cpf": st.session_state.cpf,
-                        "email": st.session_state.email,
-                        "estado": st.session_state.estado,
-                        "cidade": st.session_state.cidade,
-                        "endereco": st.session_state.endereco,
-                        "organizacao_favorita": st.session_state.fav_org,
-                        "jogos": st.session_state.jogos,
-                        "plataformas": st.session_state.plataformas,
-                        "eventos": st.session_state.eventos,
-                        "compras": st.session_state.compras
-                    }
+                    if all(campos_obrigatorios):
+                        dados = {
+                            "nome": st.session_state.name,
+                            "data_nascimento": str(st.session_state.birth_date),
+                            "genero": st.session_state.genero,
+                            "cpf": st.session_state.cpf,
+                            "email": st.session_state.email,
+                            "estado": st.session_state.estado,
+                            "cidade": st.session_state.cidade,
+                            "endereco": st.session_state.endereco,
+                            "organizacao_favorita": st.session_state.fav_org,
+                            "jogos": st.session_state.jogos,
+                            "plataformas": st.session_state.plataformas,
+                            "eventos": st.session_state.eventos,
+                            "compras": st.session_state.compras
+                        }
 
-                    try:
-                        response = requests.post("http://localhost:5000/salvar", json=dados)
-                        if response.status_code == 200:
-                            st.success("✅ Dados enviados com sucesso ao servidor!")
-                        else:
-                            st.error(f"❌ Erro ao enviar os dados: {response.text}")
-                    except Exception as e:
-                        st.error(f"❌ Erro ao conectar com a API: {e}")
-                else:
-                    st.error("⚠️ Por favor, preencha todos os campos antes de finalizar o formulário.")
+                        try:
+                            response = requests.post("http://localhost:5000/salvar", json=dados)
+                            if response.status_code == 200:
+                                st.session_state.step += 1
+                            else:
+                                st.error(f"❌ Erro ao enviar os dados: {response.text}")
+                        except Exception as e:
+                            st.error(f"❌ Erro ao conectar com a API: {e}")
+                    else:
+                        st.error("⚠️ Por favor, preencha todos os campos antes de finalizar o formulário.")
         else:
             if not nome_valido:
                 st.error("❌ Nome não encontrado no documento.")
@@ -235,34 +239,24 @@ elif st.session_state.step == 5:
 # ETAPA 6 - Recomendação de Perfis
 # ========================
 elif st.session_state.step == 6:
-    st.header("Obrigado por responder!")
-    st.subheader("Aqui estão alguns perfis que você pode se interessar:")
-
     resumo_usuario = (
-        f"Nome: {st.session_state['name']}. "
+        f"Eventos: {st.session_state['eventos']}. "
+        f"Compras: {st.session_state['compras']}. "
         f"Joga: {', '.join(st.session_state['jogos'])}. "
         f"Usa as plataformas: {', '.join(st.session_state['plataformas'])}. "
         f"Organização favorita: {st.session_state['fav_org']}."
     )
 
     links_catalogo = [
-        "https://liquipedia.net/counterstrike/FURIA",
-        "https://liquipedia.net/leagueoflegends/LTA/2025/Split_2/South",
-        "https://liquipedia.net/valorant/VCT/2025/Americas_League/Stage_1",
-        "https://liquipedia.net/leagueoflegends/FURIA_Esports",
-        "https://fortnitetracker.com/events",
-        "https://escharts.com/pt/tournaments/free-fire"
+        "https://pt.wikipedia.org/wiki/Furia_Esports",
+        "https://en.wikipedia.org/wiki/Python_(programming_language)"
     ]
 
     for link in links_catalogo:
         texto = extrair_texto_url(link)
         if texto:
             similaridade = verificar_relevancia(texto, resumo_usuario)
-            if similaridade > 0.4:
-                st.success(f"🔗 Recomendado: {link} (similaridade: {similaridade:.2f})")
-            else:
-                st.info(f"🔗 Possível interesse: {link} (similaridade: {similaridade:.2f})")
+            if similaridade > 0.2:
+                st.success(f"🔗 Recomendado: {link}")
         else:
             st.error(f"❌ Não foi possível acessar: {link}")
-    else:
-        st.info("Preencha o formulário para receber recomendações de perfis.")
