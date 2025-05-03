@@ -1,12 +1,14 @@
-# app.py
 import streamlit as st
 import pytesseract
 from PIL import Image
 import requests
 from transformers import pipeline
 import datetime
+import re
+import Levenshtein
+import unicodedata
 
-# Configuração da página
+# ------------------- Configuração da página -------------------
 st.set_page_config(page_title="Know Your Fan | FURIA",
                    page_icon='images/logo.png')
 
@@ -53,6 +55,15 @@ if st.session_state.step == 1:
         value=st.session_state.get("birth_date", datetime.date(2000, 1, 1)),
         min_value=datetime.date(1900, 1, 1),
         max_value=datetime.date.today())
+
+    generos = ["Masculino", "Feminino", "Outro", "Prefiro não informar"]
+    st.session_state.genero = st.radio(
+        "Gênero:",
+        options=generos,
+        index=generos.index(st.session_state.get("genero", "Prefiro não informar"))
+        if st.session_state.get("genero") in generos else generos.index("Prefiro não informar"),
+        horizontal=True
+    )
 
     cpf = st.text_input("CPF: (Somente Números)", st.session_state.get("cpf", ""))
     st.session_state.cpf = cpf  # Salva no estado
@@ -128,9 +139,11 @@ elif st.session_state.step == 3:
            campos_obrigatorios = [
                st.session_state.get("name"),
                st.session_state.get("birth_date"),
+               st.session_state.get("genero"),
                st.session_state.get("cpf"),
                st.session_state.get("email"),
                st.session_state.get("estado"),
+               st.session_state.get("cidade"),
                st.session_state.get("endereco"),
                st.session_state.get("fav_org"),
                st.session_state.get("jogos"),
@@ -143,9 +156,11 @@ elif st.session_state.step == 3:
                dados = {
                    "nome": st.session_state.name,
                    "data_nascimento": str(st.session_state.birth_date),
+                   "genero": st.session_state.genero,
                    "cpf": st.session_state.cpf,
                    "email": st.session_state.email,
                    "estado": st.session_state.estado,
+                   "cidade": st.session_state.cidade,
                    "endereco": st.session_state.endereco,
                    "organizacao_favorita": st.session_state.fav_org,
                    "jogos": st.session_state.jogos,
@@ -167,24 +182,60 @@ elif st.session_state.step == 3:
 
 st.divider()
 
-# Upload de Documento
+# ========================
+# ETAPA 4 - Upload de Documento
+# ========================
 st.subheader("📄 Validação de Documento")
 uploaded_file = st.file_uploader("Envie seu documento (imagem)", type=["png", "jpg", "jpeg"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Documento enviado", use_column_width=True)
 
     # OCR para extrair texto
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
     text_extracted = pytesseract.image_to_string(image)
-    st.write("Texto extraído do documento:")
-    st.code(text_extracted)
 
-    # Validação simples (checando se nome ou CPF aparecem no texto)
-    if name.lower() in text_extracted.lower() and cpf in text_extracted:
-        st.success("✅ Documento validado!")
+    def normalize(text):
+        text = unicodedata.normalize('NFKD', text)
+        text = ''.join([c for c in text if not unicodedata.combining(c)])
+        return text.lower().strip()
+
+    # Texto limpo
+    texto_ocr_normalizado = normalize(text_extracted).replace('\n', ' ')
+
+    # Nome do usuário limpo e dividido em palavras
+    nome_usuario = normalize(st.session_state.name)
+    palavras_nome = nome_usuario.split()
+
+    # ------------------- CPF -------------------
+    # Normaliza o texto extraído pelo OCR
+    texto_limpo = text_extracted.replace('\n', ' ').replace(' ', '').replace('-', '').replace('.', '').replace('/',                                                                                                     '')
+    # Extrai todas as sequências de 11 dígitos (possíveis CPFs)
+    possiveis_cpfs = re.findall(r'\d{11}', texto_limpo)
+    # Verifica se o CPF está entre os extraídos
+    cpf_valido = st.session_state.cpf in possiveis_cpfs
+
+    # ------------------- Nome -------------------
+    # nome_valido = st.session_state.name.lower() in text_extracted.lower()
+    def nome_validado(palavras_nome, texto):
+        for palavra in palavras_nome:
+            correspondencias = [
+                Levenshtein.ratio(palavra, palavra_ocr)
+                for palavra_ocr in texto.split()
+            ]
+            if max(correspondencias, default=0) < 0.85:
+                return False
+        return True
+
+    nome_valido = nome_validado(palavras_nome, texto_ocr_normalizado)
+
+    if nome_valido and cpf_valido:
+        st.success("✅ Documento validado com sucesso!")
     else:
-        st.error("❌ Documento inválido ou informações não conferem.")
+        if not nome_valido:
+            st.error("❌ Nome não encontrado no documento.")
+        if not cpf_valido:
+            st.error("❌ CPF não encontrado ou inválido no documento.")
 
 st.divider()
 
