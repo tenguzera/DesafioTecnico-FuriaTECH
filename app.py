@@ -6,7 +6,7 @@ from funcoes import *
 from transformers import pipeline
 from PIL import Image
 
-bearer_token = "AAAAAAAAAAAAAAAAAAAAANkT1AEAAAAAZyfbCYniSFjo%2F5ZZW35eIMJ7J3c%3DVEdI9G59NuAhfqkjyJ1VdP3xfwfmz3U3wSSRmmEDE6WcaZiI5H"
+bearer_token = "SEU_TOKEN"
 
 # ------------------- Configuração da página -------------------
 st.set_page_config(page_title="Know Your Fan | FURIA",
