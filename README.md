@@ -29,7 +29,7 @@ Este é um projeto desenvolvido para o desafio técnico da FURIA, com o objetivo
 
 - Python 3.8+
 - Tesseract OCR instalado e disponível no PATH
-- Contas de desenvolvedor no [Twitter Developer Portal](https://developer.twitter.com/)
+- Conta de desenvolvedor no [Twitter Developer Portal](https://developer.twitter.com/)
 
 ---
 
@@ -60,7 +60,15 @@ pip install -r requirements.txt
 - **Windows**: Baixe de [https://github.com/tesseract-ocr/tesseract](https://github.com/tesseract-ocr/tesseract)
 - **Linux/macOS**: `sudo apt install tesseract-ocr`
 
-**Obs:** É possível que seja necessário modificar o programa a depender de onde o tesseract foi instalado.
+**Obs:** É possível que seja necessário modificar o programa (linha 184) a depender de onde o tesseract foi instalado.
+
+### 5. Insira seu Token da API do Twitter
+
+Em `app.py`, edite o código (linha 9) com o seu Token para que a integração funcione corretamente.
+
+```bash
+bearer_token = "SEU_TOKEN"
+```
 
 ---
 
@@ -101,5 +109,3 @@ DesafioTecnico-FuriaTECH/
 - A autenticação com Twitter/X segue o padrão OAuth 2.0.
 - Nenhum token de acesso é armazenado no frontend — tudo é temporário em sessão.
 - Os dados enviados são exclusivamente seus, usados para demonstração do desafio.
-
----

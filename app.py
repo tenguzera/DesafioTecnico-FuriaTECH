@@ -36,7 +36,7 @@ st.markdown(
 
 if st.session_state.get("step") == 1:
     st.title("Know Your Fan")
-    st.subheader("Nos ajude a te conhecer melhor!")
+    st.subheader("Nos ajude a te conhecer melhor, furioso!")
 elif st.session_state.get("step") == 6:
     st.title("Obrigado por responder!")
     st.subheader("Aqui estão alguns perfis que você pode se interessar:")
@@ -169,7 +169,7 @@ elif st.session_state.step == 4:
 elif st.session_state.step == 5:
     st.header("Etapa 5: Validação de Documento")
 
-    uploaded_file = st.file_uploader("Envie seu documento (imagem)", type=["png", "jpg", "jpeg"])
+    uploaded_file = st.file_uploader("Envie seu documento com CPF (imagem):", type=["png", "jpg", "jpeg"])
 
     col1, col_spacer, col2 = st.columns([1, 5, 1])
     with col1:
@@ -184,12 +184,14 @@ elif st.session_state.step == 5:
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         text_extracted = pytesseract.image_to_string(image)
 
+        # ------------------- Nome -------------------
         # Texto limpo
         texto_ocr_normalizado = normalize(text_extracted).replace('\n', ' ')
-
         # Nome do usuário limpo e dividido em palavras
         nome_usuario = normalize(st.session_state.name)
         palavras_nome = nome_usuario.split()
+        # Verifica se o nome está no documento
+        nome_valido = nome_validado(palavras_nome, texto_ocr_normalizado)
 
         # ------------------- CPF -------------------
         # Normaliza o texto extraído pelo OCR
@@ -198,9 +200,6 @@ elif st.session_state.step == 5:
         possiveis_cpfs = re.findall(r'\d{11}', texto_limpo)
         # Verifica se o CPF está entre os extraídos
         cpf_valido = st.session_state.cpf in possiveis_cpfs
-
-        # ------------------- Nome -------------------
-        nome_valido = nome_validado(palavras_nome, texto_ocr_normalizado)
 
         if nome_valido and cpf_valido:
             st.success("✅ Documento validado com sucesso! Clique para finalizar.")

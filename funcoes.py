@@ -31,6 +31,7 @@ def nome_validado(palavras_nome, texto):
             return False
     return True
 
+# Pega dados do twitter através da API
 def get_twitter_data(username, bearer_token):
     headers = {
         "Authorization": f"Bearer {bearer_token}"
@@ -52,17 +53,9 @@ def get_twitter_data(username, bearer_token):
     }
     tweets_response = requests.get(tweets_url, headers=headers, params=tweets_params)
 
-    # Buscar contas seguidas
-    follows_url = f"https://api.twitter.com/2/users/{user_id}/following"
-    follows_params = {
-        "max_results": 10
-    }
-    follows_response = requests.get(follows_url, headers=headers, params=follows_params)
-
     return {
         "tweets": tweets_response.json().get('data', []),
     }, None
-
 
 # Extrai texto de uma url para recomendação
 def extrair_texto_url(url):
