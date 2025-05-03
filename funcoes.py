@@ -31,6 +31,39 @@ def nome_validado(palavras_nome, texto):
             return False
     return True
 
+def get_twitter_data(username, bearer_token):
+    headers = {
+        "Authorization": f"Bearer {bearer_token}"
+    }
+
+    # Buscar o ID do usuário
+    user_url = f"https://api.twitter.com/2/users/by/username/{username}"
+    user_response = requests.get(user_url, headers=headers)
+    if user_response.status_code != 200:
+        return None, f"Erro ao buscar usuário: {user_response.text}"
+
+    user_id = user_response.json()['data']['id']
+
+    # Buscar os últimos tweets do usuário
+    tweets_url = f"https://api.twitter.com/2/users/{user_id}/tweets"
+    tweets_params = {
+        "max_results": 10,  # pode ajustar
+        "tweet.fields": "created_at,text"
+    }
+    tweets_response = requests.get(tweets_url, headers=headers, params=tweets_params)
+
+    # Buscar contas seguidas
+    follows_url = f"https://api.twitter.com/2/users/{user_id}/following"
+    follows_params = {
+        "max_results": 10
+    }
+    follows_response = requests.get(follows_url, headers=headers, params=follows_params)
+
+    return {
+        "tweets": tweets_response.json().get('data', []),
+    }, None
+
+
 # Extrai texto de uma url para recomendação
 def extrair_texto_url(url):
     try:

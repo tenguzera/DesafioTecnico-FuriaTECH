@@ -6,6 +6,8 @@ from funcoes import *
 from transformers import pipeline
 from PIL import Image
 
+bearer_token = "AAAAAAAAAAAAAAAAAAAAANkT1AEAAAAAZyfbCYniSFjo%2F5ZZW35eIMJ7J3c%3DVEdI9G59NuAhfqkjyJ1VdP3xfwfmz3U3wSSRmmEDE6WcaZiI5H"
+
 # ------------------- Configuração da página -------------------
 st.set_page_config(page_title="Know Your Fan | FURIA",
                    page_icon='images/logo.png')
@@ -135,6 +137,26 @@ elif st.session_state.step == 3:
 elif st.session_state.step == 4:
     st.header("Etapa 4: Integração com redes sociais")
 
+    st.subheader("Vincule seu X/Twitter")
+
+    username = st.text_input("Digite seu @ do X (sem o @)")
+    st.session_state['twitter_username'] = username
+    if st.button("Buscar dados do X"):
+        with st.spinner("Buscando dados..."):
+            dados, erro = get_twitter_data(username, bearer_token)
+            if erro:
+                st.error(erro)
+            else:
+                st.session_state.twitter_data = dados
+                st.success("Dados coletados com sucesso!")
+                st.write("📝 Tweets recentes:")
+                for t in dados["tweets"]:
+                    st.markdown(f"- {t['text']}")
+
+                furia_mencionada = any("furia" in tweet["text"].lower() for tweet in dados["tweets"])
+                st.session_state['furia_mencionada'] = furia_mencionada
+
+
     col1, col_spacer, col2 = st.columns([1, 5, 1])
     with col1:
         st.button("⬅️ Voltar", on_click=prev_step)
@@ -199,7 +221,8 @@ elif st.session_state.step == 5:
                         st.session_state.get("jogos"),
                         st.session_state.get("plataformas"),
                         st.session_state.get("eventos"),
-                        st.session_state.get("compras")
+                        st.session_state.get("compras"),
+                        st.session_state.get("twitter_username"),
                     ]
 
                     if all(campos_obrigatorios):
@@ -216,7 +239,9 @@ elif st.session_state.step == 5:
                             "jogos": st.session_state.jogos,
                             "plataformas": st.session_state.plataformas,
                             "eventos": st.session_state.eventos,
-                            "compras": st.session_state.compras
+                            "compras": st.session_state.compras,
+                            "usuario_twitter": st.session_state.twitter_username,
+                            "furia_mencionada": st.session_state.get("furia_mencionada", False)
                         }
 
                         try:
